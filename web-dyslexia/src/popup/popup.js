@@ -6,15 +6,21 @@
 
 const $ = id => document.getElementById(id);
 
+const SUBTITLE_SIZE_LABELS = ['Small', 'Medium–small', 'Medium', 'Medium–large', 'Large'];
+
 const els = {
   dyslexiaToggle:    $('dyslexia-toggle'),
+  contrastToggle:    $('contrast-toggle'),
   seizureToggle:     $('seizure-toggle'),
   sensitivitySection:$('sensitivity-section'),
   sensitivitySlider: $('sensitivity-slider'),
   sensitivityValue:  $('sensitivity-value'),
+  subtitleSizeSlider: $('subtitle-size-slider'),
+  subtitleSizeValue:  $('subtitle-size-value'),
   allowlistToggle:   $('allowlist-toggle'),
   allowlistDomain:   $('allowlist-domain'),
   cardDyslexia:      $('card-dyslexia'),
+  cardContrast:      $('card-contrast'),
   cardSeizure:       $('card-seizure'),
   cardAllowlist:     $('card-allowlist'),
 };
@@ -22,8 +28,10 @@ const els = {
 let currentHostname = '';
 let settings = {
   dyslexiaMode:    false,
+  contrastMode:    false,
   seizureSafeMode: false,
   sensitivity:     5,
+  subtitleFontSize: 3,
   allowlist:       []
 };
 
@@ -55,9 +63,14 @@ async function init() {
 
 function hydrateUI() {
   els.dyslexiaToggle.checked = settings.dyslexiaMode;
+  els.contrastToggle.checked = settings.contrastMode;
   els.seizureToggle.checked  = settings.seizureSafeMode;
   els.sensitivitySlider.value = settings.sensitivity;
   els.sensitivityValue.textContent = settings.sensitivity;
+
+  const subSize = Math.max(1, Math.min(5, settings.subtitleFontSize || 3));
+  els.subtitleSizeSlider.value = subSize;
+  els.subtitleSizeValue.textContent = SUBTITLE_SIZE_LABELS[subSize - 1];
 
   // Show sensitivity section only when seizure-safe is on
   els.sensitivitySection.hidden = !settings.seizureSafeMode;
@@ -72,6 +85,7 @@ function hydrateUI() {
 
   // Active card highlight
   els.cardDyslexia.classList.toggle('active', settings.dyslexiaMode);
+  els.cardContrast.classList.toggle('active', settings.contrastMode);
   els.cardSeizure.classList.toggle('active', settings.seizureSafeMode);
 }
 
@@ -81,6 +95,12 @@ els.dyslexiaToggle.addEventListener('change', async () => {
   settings.dyslexiaMode = els.dyslexiaToggle.checked;
   els.cardDyslexia.classList.toggle('active', settings.dyslexiaMode);
   await browser.storage.sync.set({ dyslexiaMode: settings.dyslexiaMode });
+});
+
+els.contrastToggle.addEventListener('change', async () => {
+  settings.contrastMode = els.contrastToggle.checked;
+  els.cardContrast.classList.toggle('active', settings.contrastMode);
+  await browser.storage.sync.set({ contrastMode: settings.contrastMode });
 });
 
 els.seizureToggle.addEventListener('change', async () => {
@@ -102,6 +122,20 @@ els.sensitivitySlider.addEventListener('change', async () => {
   clearTimeout(sensitivityTimer);
   sensitivityTimer = setTimeout(async () => {
     await browser.storage.sync.set({ sensitivity: settings.sensitivity });
+  }, 300);
+});
+
+els.subtitleSizeSlider.addEventListener('input', () => {
+  const val = parseInt(els.subtitleSizeSlider.value, 10);
+  els.subtitleSizeValue.textContent = SUBTITLE_SIZE_LABELS[val - 1];
+  settings.subtitleFontSize = val;
+});
+
+let subtitleSizeTimer = null;
+els.subtitleSizeSlider.addEventListener('change', async () => {
+  clearTimeout(subtitleSizeTimer);
+  subtitleSizeTimer = setTimeout(async () => {
+    await browser.storage.sync.set({ subtitleFontSize: settings.subtitleFontSize });
   }, 300);
 });
 

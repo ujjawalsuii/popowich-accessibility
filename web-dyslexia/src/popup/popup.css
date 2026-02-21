@@ -271,6 +271,48 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   color: var(--text-muted);
 }
 
+/* ── Subtitle font size ───────────────────────────────────── */
+
+.card#card-subtitles .card-info {
+  margin-bottom: 10px;
+}
+
+.subtitle-control {
+  margin-top: 4px;
+}
+
+.subtitle-control input[type="range"] {
+  margin-top: 4px;
+}
+
+.subtitle-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+#subtitle-size-value {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 4em;
+  text-align: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ── Footer ──────────────────────────────────────────────── */
 
 footer {

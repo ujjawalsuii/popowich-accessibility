@@ -46,6 +46,26 @@
       </div>
     </div>
 
+    <!-- Color contrast card -->
+    <div class="card" id="card-contrast">
+      <div class="card-row">
+        <div class="card-info">
+          <h2>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            Color contrast
+          </h2>
+          <p>Higher contrast and color adjustments for low vision and color blindness.</p>
+        </div>
+        <label class="toggle" aria-label="Toggle Color Contrast Mode">
+          <input type="checkbox" id="contrast-toggle" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+    </div>
+
     <!-- Seizure-Safe card -->
     <div class="card" id="card-seizure">
       <div class="card-row">
@@ -77,6 +97,30 @@
         <div class="sensitivity-labels">
           <span>Lenient</span>
           <span>Aggressive</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtitle font size (for ASL-to-text / captions) -->
+    <div class="card" id="card-subtitles">
+      <div class="card-info">
+        <h2>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="2" y="6" width="16" height="2" rx="1" fill="currentColor"/>
+            <rect x="2" y="11" width="12" height="2" rx="1" fill="currentColor"/>
+          </svg>
+          Subtitle font size
+        </h2>
+        <p>Size of captions and future ASL-to-text subtitles.</p>
+      </div>
+      <div class="subtitle-control">
+        <label for="subtitle-size-slider" class="sr-only">Subtitle font size</label>
+        <input type="range" id="subtitle-size-slider" min="1" max="5" value="3"
+               aria-label="Subtitle font size" />
+        <div class="subtitle-labels">
+          <span>Small</span>
+          <span id="subtitle-size-value">Medium</span>
+          <span>Large</span>
         </div>
       </div>
     </div>

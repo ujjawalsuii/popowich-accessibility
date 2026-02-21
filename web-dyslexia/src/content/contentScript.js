@@ -28,11 +28,17 @@ const SS_DYSLEXIA_CSS_ID  = 'screenshield-dyslexia-css';
 const SS_DYSLEXIA_FONT_ID = 'screenshield-dyslexia-font';
 const SS_DYSLEXIA_HOST_ID = 'screenshield-dyslexia-host';
 const SS_SEIZURE_CSS_ID   = 'screenshield-seizure-css';
+const SS_CONTRAST_CSS_ID  = 'screenshield-contrast-css';
+
+/** Subtitle font size: 1–5 map to px (for ASL-to-text / captions). */
+const SUBTITLE_SIZE_PX = [14, 18, 22, 26, 32];
 
 let settings = {
   dyslexiaMode:    false,
+  contrastMode:    false,
   seizureSafeMode: false,
   sensitivity:     5,
+  subtitleFontSize: 3,
   allowlist:       []
 };
 
@@ -53,8 +59,10 @@ async function init() {
   } catch {
     return;
   }
+  applySubtitleFontSize();
   if (isAllowlisted()) return;
   if (settings.dyslexiaMode)    enableDyslexiaMode();
+  if (settings.contrastMode)    enableContrastMode();
   if (settings.seizureSafeMode) enableSeizureSafeMode();
 }
 
@@ -74,11 +82,13 @@ browser.storage.onChanged.addListener((changes, area) => {
 
   if (changes.allowlist && isAllowlisted()) {
     disableDyslexiaMode();
+    disableContrastMode();
     disableSeizureSafeMode();
     return;
   }
   if (changes.allowlist && !isAllowlisted()) {
     if (settings.dyslexiaMode)    enableDyslexiaMode();
+    if (settings.contrastMode)    enableContrastMode();
     if (settings.seizureSafeMode) enableSeizureSafeMode();
     return;
   }
@@ -87,8 +97,14 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (changes.dyslexiaMode) {
     settings.dyslexiaMode ? enableDyslexiaMode() : disableDyslexiaMode();
   }
+  if (changes.contrastMode) {
+    settings.contrastMode ? enableContrastMode() : disableContrastMode();
+  }
   if (changes.seizureSafeMode) {
     settings.seizureSafeMode ? enableSeizureSafeMode() : disableSeizureSafeMode();
+  }
+  if (changes.subtitleFontSize !== undefined) {
+    applySubtitleFontSize();
   }
 });
 
@@ -421,6 +437,68 @@ function injectDyslexiaPanel(darkInitial) {
   });
 
   document.documentElement.appendChild(host);
+}
+
+// ── 4b. Color contrast mode (low vision / color blindness) ─────────────────────
+
+function enableContrastMode() {
+  if (document.getElementById(SS_CONTRAST_CSS_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = SS_CONTRAST_CSS_ID;
+  style.textContent = `
+    :root {
+      --ss-contrast-bg:    #ffffff;
+      --ss-contrast-text:  #000000;
+      --ss-contrast-border: #000000;
+      --ss-contrast-outline: 3px solid #000000;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ss-contrast-bg:    #000000;
+        --ss-contrast-text:  #ffffff;
+        --ss-contrast-border: #ffffff;
+        --ss-contrast-outline: 3px solid #ffffff;
+      }
+    }
+    body {
+      background-color: var(--ss-contrast-bg) !important;
+      color: var(--ss-contrast-text) !important;
+      filter: contrast(1.12) !important;
+    }
+    a, button, [role="button"], input, select, textarea {
+      outline: var(--ss-contrast-outline) !important;
+      outline-offset: 2px !important;
+    }
+    a { border-bottom: 2px solid var(--ss-contrast-border) !important; }
+    button, [role="button"], input, select, textarea {
+      border: 2px solid var(--ss-contrast-border) !important;
+    }
+    *:focus {
+      outline: var(--ss-contrast-outline) !important;
+      outline-offset: 2px !important;
+    }
+    img, video {
+      filter: contrast(1.08) !important;
+    }
+  `;
+  (document.head || document.documentElement).appendChild(style);
+}
+
+function disableContrastMode() {
+  document.getElementById(SS_CONTRAST_CSS_ID)?.remove();
+}
+
+// ── 4c. Subtitle font size (for ASL-to-text / captions) ───────────────────────
+
+/**
+ * Applies --ss-subtitle-font-size to :root so any caption/subtitle element
+ * (e.g. future ASL-to-text) can use it: font-size: var(--ss-subtitle-font-size);
+ */
+function applySubtitleFontSize() {
+  const level = Math.max(1, Math.min(5, settings.subtitleFontSize || 3));
+  const px = SUBTITLE_SIZE_PX[level - 1];
+  document.documentElement.style.setProperty('--ss-subtitle-font-size', px + 'px');
 }
 
 // ── 5. Seizure-safe mode ──────────────────────────────────────────────────────
