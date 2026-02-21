@@ -14,6 +14,7 @@ const els = {
   sensitivitySection: $('sensitivity-section'),
   sensitivitySlider: $('sensitivity-slider'),
   sensitivityValue: $('sensitivity-value'),
+  colorMode: $('color-mode'),
   allowlistToggle: $('allowlist-toggle'),
   allowlistDomain: $('allowlist-domain'),
   cardDyslexia: $('card-dyslexia'),
@@ -38,6 +39,7 @@ let settings = {
   ttsLanguage: 'en',
   aslMode: false,
   sensitivity: 5,
+  colorMode: 'default',
   allowlist: []
 };
 
@@ -58,10 +60,11 @@ async function init() {
     // tabs permission may not be available on restricted pages
   }
 
-  // Load persisted settings
+  // Load persisted settings (chrome.storage.sync or browser.storage.sync via polyfill)
   const stored = await browser.storage.sync.get(Object.keys(settings));
   settings = { ...settings, ...stored };
 
+  applyPaletteToPopup(settings.colorMode);
   hydrateUI();
 }
 
@@ -110,6 +113,16 @@ function hydrateUI() {
   // ASL
   els.aslToggle.checked = settings.aslMode;
   els.cardAsl.classList.toggle('active', settings.aslMode);
+
+  // Color mode
+  if (els.colorMode) els.colorMode.value = settings.colorMode || 'default';
+}
+
+// Apply selected color palette to popup (CSS variables on document root)
+function applyPaletteToPopup(mode) {
+  if (typeof applyPalette === 'function') {
+    applyPalette(mode, document.documentElement);
+  }
 }
 
 // ── Event handlers ───────────────────────────────────────────
