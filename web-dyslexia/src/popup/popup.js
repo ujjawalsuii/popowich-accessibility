@@ -131,6 +131,29 @@ els.allowlistToggle.addEventListener('change', async () => {
   els.cardAllowlist.classList.toggle('allowlisted', els.allowlistToggle.checked);
 });
 
+// ── Region selector ─────────────────────────────────────────
+
+const regionSelectBtn = document.getElementById('region-select-btn');
+if (regionSelectBtn) {
+  regionSelectBtn.addEventListener('click', async () => {
+    try {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+      await browser.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content/regionSelector.js']
+      });
+      await new Promise(r => setTimeout(r, 100));
+      await browser.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => { if (typeof window.__EXTENSION_REGION_SELECTOR__ === 'function') window.__EXTENSION_REGION_SELECTOR__(); }
+      });
+    } catch (e) {
+      console.warn('Region selector failed:', e);
+    }
+  });
+}
+
 // ── Boot ─────────────────────────────────────────────────────
 
 init().catch(console.error);

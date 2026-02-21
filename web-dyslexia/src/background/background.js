@@ -61,3 +61,4 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
     });
   }
 });
+
