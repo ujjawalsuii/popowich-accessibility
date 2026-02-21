@@ -29,6 +29,14 @@ const SS_DYSLEXIA_FONT_ID = 'screenshield-dyslexia-font';
 const SS_DYSLEXIA_HOST_ID = 'screenshield-dyslexia-host';
 const SS_SEIZURE_CSS_ID = 'screenshield-seizure-css';
 
+/** CSS filter values applied to the whole page for color-blindness-friendly viewing. */
+const PAGE_COLOR_MODE_FILTERS = {
+  default: 'none',
+  deuteranopia: 'hue-rotate(-20deg) saturate(1.25) contrast(1.05)',
+  protanopia: 'hue-rotate(-15deg) saturate(1.2) contrast(1.05)',
+  tritanopia: 'hue-rotate(15deg) saturate(1.2) contrast(1.05)',
+};
+
 let settings = {
   dyslexiaMode: false,
   seizureSafeMode: false,
@@ -36,6 +44,7 @@ let settings = {
   ttsLanguage: 'en',
   aslMode: false,
   sensitivity: 5,
+  colorMode: 'default',
   allowlist: []
 };
 
@@ -56,6 +65,7 @@ async function init() {
   } catch {
     return;
   }
+  applyPageColorMode();
   if (isAllowlisted()) return;
   if (settings.dyslexiaMode) enableDyslexiaMode();
   if (settings.seizureSafeMode) enableSeizureSafeMode();
@@ -80,6 +90,7 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (changes.allowlist && isAllowlisted()) {
     disableDyslexiaMode();
     disableSeizureSafeMode();
+    disablePageColorMode();
     return;
   }
   if (changes.allowlist && !isAllowlisted()) {
@@ -104,7 +115,35 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (changes.aslMode) {
     settings.aslMode ? enableASL() : disableASL();
   }
+  if (changes.colorMode !== undefined) {
+    applyPageColorMode();
+  }
 });
+
+// ── Page-wide color mode (color-blindness-friendly) ───────────────────────────
+// Applies a CSS filter to the entire page. We set filter on document.documentElement
+// (the <html> element) directly so it works even on sites with strict CSP that block
+// injected <style> tags.
+
+function applyPageColorMode() {
+  if (isAllowlisted()) {
+    disablePageColorMode();
+    return;
+  }
+  const mode = settings.colorMode || 'default';
+  const filter = PAGE_COLOR_MODE_FILTERS[mode] || PAGE_COLOR_MODE_FILTERS.default;
+
+  if (filter === 'none' || filter == null) {
+    document.documentElement.style.removeProperty('filter');
+    return;
+  }
+
+  document.documentElement.style.setProperty('filter', filter, 'important');
+}
+
+function disablePageColorMode() {
+  document.documentElement.style.removeProperty('filter');
+}
 
 // ── Context menu "Narrate" handler ────────────────────────────────────────────
 browser.runtime.onMessage.addListener(async (msg) => {

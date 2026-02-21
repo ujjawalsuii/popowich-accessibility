@@ -15,12 +15,15 @@
   --border: #2d2d4a;
   --text: #e8e8f0;
   --text-muted: #8888aa;
+  --text-primary: #e8e8f0;
+  --text-secondary: #8888aa;
   --accent: #4a90d9;
   --accent-dim: rgba(74, 144, 217, 0.15);
   --warn: #f5a623;
+  --on: #34c759;
+  --error: #e74c3c;
   --tts: #a855f7;
   --tts-dim: rgba(168, 85, 247, 0.15);
-  --on: #34c759;
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -301,12 +304,15 @@ footer {
     --border: #d0d5ee;
     --text: #1a1a2e;
     --text-muted: #5a5a7e;
+    --text-primary: #1a1a2e;
+    --text-secondary: #5a5a7e;
     --accent: #3a7bc8;
     --accent-dim: rgba(58, 123, 200, 0.12);
     --warn: #d6780a;
+    --on: #2d9e48;
+    --error: #c0392b;
     --tts: #9333ea;
     --tts-dim: rgba(147, 51, 234, 0.12);
-    --on: #2d9e48;
   }
 
   /* Toggle track needs a bit more visual weight on light bg */
@@ -382,4 +388,45 @@ footer {
   height: 18px;
   vertical-align: -3px;
   margin-right: 4px;
+}
+
+/* ── Color mode selector ──────────────────────────────────── */
+
+.card-colormode .card-info {
+  margin-bottom: 10px;
+}
+
+.colormode-select-wrap {
+  margin-top: 4px;
+}
+
+.colormode-select {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 8px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.colormode-select:hover,
+.colormode-select:focus {
+  border-color: var(--accent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

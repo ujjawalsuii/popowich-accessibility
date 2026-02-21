@@ -144,6 +144,29 @@
       </div>
     </div>
 
+    <!-- Color mode (accessibility palettes) -->
+    <div class="card card-colormode" id="card-colormode">
+      <div class="card-info">
+        <h2>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5" />
+            <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+          </svg>
+          Color mode
+        </h2>
+        <p>Palettes optimized for color vision (default, deuteranopia, protanopia, tritanopia).</p>
+      </div>
+      <div class="colormode-select-wrap">
+        <label for="color-mode" class="sr-only">Color mode</label>
+        <select id="color-mode" class="colormode-select" aria-label="Color mode">
+          <option value="default">Default</option>
+          <option value="deuteranopia">Deuteranopia</option>
+          <option value="protanopia">Protanopia</option>
+          <option value="tritanopia">Tritanopia</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Allowlist card -->
     <div class="card card-allowlist" id="card-allowlist">
       <div class="card-row">
@@ -165,6 +188,7 @@
   </footer>
 
   <script src="../lib/browser-polyfill.js"></script>
+  <script src="../lib/palettes.js"></script>
   <script src="popup.js"></script>
 </body>
 
