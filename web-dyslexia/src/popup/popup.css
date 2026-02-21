@@ -81,6 +81,75 @@ main {
 
 /* ── Cards ───────────────────────────────────────────────── */
 
+.personalize-wrapper {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.personalize-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.personalize-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+.personalize-btn.listening {
+  background: rgba(245, 166, 35, 0.1);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.personalize-btn .mic-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.personalize-btn.listening .mic-icon {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.personalize-status {
+  text-align: center;
+  font-size: 11px;
+  color: var(--warn);
+  font-weight: 500;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);

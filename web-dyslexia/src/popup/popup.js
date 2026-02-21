@@ -23,6 +23,8 @@ const els = {
   cardAllowlist: $('card-allowlist'),
   aslToggle: $('asl-toggle'),
   cardAsl: $('card-asl'),
+  personalizeBtn: $('personalize-btn'),
+  personalizeStatus: $('personalize-status'),
 };
 
 let currentHostname = '';
@@ -59,6 +61,17 @@ async function init() {
 
   hydrateUI();
 }
+
+browser.storage.onChanged.addListener((changes) => {
+  let updated = false;
+  for (const [key, { newValue }] of Object.entries(changes)) {
+    if (key in settings) {
+      settings[key] = newValue;
+      updated = true;
+    }
+  }
+  if (updated) hydrateUI();
+});
 
 // ── Render ───────────────────────────────────────────────────
 
@@ -155,6 +168,44 @@ els.allowlistToggle.addEventListener('change', async () => {
   await browser.storage.sync.set({ allowlist: list });
 
   els.cardAllowlist.classList.toggle('allowlisted', els.allowlistToggle.checked);
+});
+
+// ── Voice Personalization (AI Intent Parser) ─────────────────────────
+
+els.personalizeBtn.addEventListener('click', async () => {
+  els.personalizeBtn.classList.add('listening');
+  els.personalizeStatus.textContent = "Requesting microphone access on this page...";
+  els.personalizeStatus.hidden = false;
+
+  try {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (!tab) throw new Error("No active tab");
+
+    // Tell the content script in the active tab to start listening
+    await browser.tabs.sendMessage(tab.id, { action: 'start-voice-personalization' });
+  } catch (err) {
+    console.warn("Could not start voice personalization:", err);
+    els.personalizeStatus.textContent = "Error: Please refresh the page and try again.";
+    els.personalizeBtn.classList.remove('listening');
+  }
+});
+
+// Listen for updates from the content script while listening
+browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'voice-status-update') {
+    if (request.status) {
+      els.personalizeStatus.textContent = request.status;
+    }
+    if (request.state === 'listening') {
+      els.personalizeBtn.classList.add('listening');
+      els.personalizeStatus.hidden = false;
+    } else if (request.state === 'stopped' || request.state === 'error') {
+      els.personalizeBtn.classList.remove('listening');
+      if (request.state === 'stopped') {
+        setTimeout(() => { els.personalizeStatus.hidden = true; }, 4000);
+      }
+    }
+  }
 });
 
 // ── Boot ─────────────────────────────────────────────────────

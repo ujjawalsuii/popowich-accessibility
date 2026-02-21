@@ -26,6 +26,20 @@
 
   <main>
 
+    <!-- Voice Personalization (AI Intent) -->
+    <div class="personalize-wrapper">
+      <button id="personalize-btn" class="personalize-btn" aria-label="Personalize with Voice">
+        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+        <span>Personalize (Voice)</span>
+      </button>
+      <div id="personalize-status" class="personalize-status" hidden>Listening...</div>
+    </div>
+
     <!-- Dyslexia Friendly card -->
     <div class="card" id="card-dyslexia">
       <div class="card-row">

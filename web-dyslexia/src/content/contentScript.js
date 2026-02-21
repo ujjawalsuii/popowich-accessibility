@@ -2381,6 +2381,92 @@ function classifyASL(lm) {
   return null;
 }
 
+// ── 11. Voice Personalization (AI Intent) ─────────────────────────────────────
+
+function startVoicePersonalization() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    browser.runtime.sendMessage({ action: 'voice-status-update', state: 'error', status: 'Speech Recognition not supported in this browser.' });
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    browser.runtime.sendMessage({ action: 'voice-status-update', state: 'listening', status: 'Listening... Speak your needs.' });
+  };
+
+  recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript.toLowerCase();
+    browser.runtime.sendMessage({ action: 'voice-status-update', state: 'processing', status: `Heard: "${transcript}"` });
+
+    let changed = false;
+    const toUpdate = {};
+
+    // Dyslexia intent
+    if (/\b(dyslexia|dyslexic|reading disorder)\b/i.test(transcript)) {
+      toUpdate.dyslexiaMode = true;
+      changed = true;
+    }
+
+    // Seizure/Epilepsy intent
+    if (/\b(seizure|seizures|epilepsy|epileptic|flashing lights|photosensitive|ugwim|ugwim epilepsy)\b/i.test(transcript)) {
+      toUpdate.seizureSafeMode = true;
+      changed = true;
+    }
+
+    // ASL Recognition / Deaf intent
+    if (/\b(asl|sign language|deaf|hard of hearing)\b/i.test(transcript)) {
+      toUpdate.aslMode = true;
+      changed = true;
+    }
+
+    // TTS / Mute / Non-verbal intent
+    if (/\b(tts|text to speech|mute|non-verbal|non verbal|can'?t speak|speech impairment)\b/i.test(transcript)) {
+      toUpdate.ttsMode = true;
+      changed = true;
+    }
+
+    if (changed) {
+      // Use chrome.storage fallback for cross-browser compat
+      const storageApi = (typeof chrome !== 'undefined' && chrome.storage) ? chrome.storage : browser.storage;
+      storageApi.sync.set(toUpdate, () => {
+        browser.runtime.sendMessage({ action: 'voice-status-update', state: 'stopped', status: 'Modes updated successfully!' });
+      });
+    } else {
+      browser.runtime.sendMessage({ action: 'voice-status-update', state: 'stopped', status: 'No specific needs detected.' });
+    }
+  };
+
+  recognition.onspeechend = () => {
+    recognition.stop();
+  };
+
+  recognition.onerror = (event) => {
+    // If permission denied, the page context will prompt the user
+    let errorMsg = "Error: " + event.error;
+    if (event.error === 'not-allowed') {
+      errorMsg = "Microphone access denied by the browser.";
+    }
+    browser.runtime.sendMessage({ action: 'voice-status-update', state: 'error', status: errorMsg });
+  };
+
+  recognition.onend = () => {
+    browser.runtime.sendMessage({ action: 'voice-status-update', state: 'stopped' });
+  };
+
+  recognition.start();
+}
+
+browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'start-voice-personalization') {
+    startVoicePersonalization();
+  }
+});
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 init().catch(console.warn);
