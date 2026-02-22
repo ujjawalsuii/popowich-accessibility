@@ -252,7 +252,7 @@ function stopCurrentSource() {
     currentCam = null;
   }
   if (screenLoopId) {
-    cancelAnimationFrame(screenLoopId);
+    clearTimeout(screenLoopId);
     screenLoopId = null;
   }
   screenProcessing = false;
@@ -274,9 +274,11 @@ function startScreenLoop(video) {
       }
       screenProcessing = false;
     }
-    screenLoopId = requestAnimationFrame(loop);
+    // Use setTimeout instead of requestAnimationFrame so detection doesn't
+    // freeze when the user backgrounds the meeting tab while screen sharing.
+    screenLoopId = setTimeout(loop, 100);
   }
-  screenLoopId = requestAnimationFrame(loop);
+  screenLoopId = setTimeout(loop, 100);
 }
 
 async function initHands() {
