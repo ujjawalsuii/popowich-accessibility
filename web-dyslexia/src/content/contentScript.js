@@ -2276,9 +2276,14 @@ function onASLResults(results) {
       aslLetterStart = Date.now();
     }
   } else if (letter === 'BKSP') {
-    if (aslCurrentLetter !== 'BKSP') {
-      aslWordBuffer = aslWordBuffer.slice(0, -1);
-      if (aslWordEl) aslWordEl.textContent = aslWordBuffer;
+    if (letter === aslCurrentLetter) {
+      if (Date.now() - aslLetterStart >= ASL_HOLD_MS) {
+        aslWordBuffer = aslWordBuffer.slice(0, -1);
+        if (aslWordEl) aslWordEl.textContent = aslWordBuffer;
+        aslCurrentLetter = '';
+        aslLetterStart = Date.now();
+      }
+    } else {
       aslCurrentLetter = 'BKSP';
       aslLetterStart = Date.now();
     }
@@ -2322,8 +2327,9 @@ function classifyASL(lm) {
   const thumbPinkyDist = dist(4, 20);
   const indexMiddleDist = dist(8, 12);
 
-  // Crossed = index tip past middle tip AND fingers close
-  const fingersCrossed = (lm[12].x - lm[8].x) > 0.03 && indexMiddleDist < 0.06;
+  // Crossed = fingertips horizontally offset (one over the other) AND close together
+  // Use ABSOLUTE value so it works for either hand and any webcam mirror mode
+  const fingersCrossed = Math.abs(lm[8].x - lm[12].x) > 0.03 && indexMiddleDist < 0.06;
 
   // Horizontal = finger is pointing more sideways than up/down
   // Compare horizontal span vs vertical span of index finger
@@ -2347,7 +2353,14 @@ function classifyASL(lm) {
 
   if (indexExt && middleExt && !ringExt && !pinkyExt) {
     if (handHorizontal && Math.abs(lm[8].y - lm[12].y) < 0.06) return 'H';
-    if (thumbMiddleDist < 0.10 && lm[4].y > lm[8].y) return 'K';
+    // K: thumb is BETWEEN index and middle (check x-position is between the two fingertips)
+    const thumbBetween = (lm[4].x > Math.min(lm[8].x, lm[12].x) - 0.02) &&
+      (lm[4].x < Math.max(lm[8].x, lm[12].x) + 0.02) &&
+      thumbMiddleDist < 0.10;
+    if (thumbBetween) return 'K';
+    // R: fingers crossed AND thumb near ring finger area (blocking it)
+    if (fingersCrossed && thumbRingDist < 0.12) return 'R';
+    // R fallback: just fingers clearly crossed
     if (fingersCrossed) return 'R';
     if (indexMiddleDist < 0.06 && !fingersCrossed) return 'U';
     return 'V';
@@ -2375,8 +2388,11 @@ function classifyASL(lm) {
 
   if (allCurled && lm[4].y > lm[6].y && thumbIndexDist < 0.07 && thumbMiddleDist > 0.03) return 'T';
   if (indexPartial && middleCurl && ringCurl && pinkyCurl) return 'X';
-  if (allCurled && thumbIndexDist < 0.07 && thumbAcross) return 'E';
-  if (allCurled && thumbMiddleDist < 0.05 && thumbRingDist > 0.04 && lm[4].y > lm[10].y && thumbIndexDist > 0.04) return 'N';
+  // E: thumb horizontal UNDER the curled fingers (thumb tip below index PIP, and thumb is more horizontal than vertical)
+  const thumbHSpan = Math.abs(lm[4].x - lm[2].x);
+  const thumbVSpan = Math.abs(lm[4].y - lm[2].y);
+  if (allCurled && lm[4].y > lm[6].y && thumbHSpan > thumbVSpan) return 'E';
+  if (allCurled && thumbMiddleDist < 0.05 && thumbRingDist > 0.04 && lm[4].y > lm[10].y && thumbIndexDist > 0.04 && !thumbAcross) return 'N';
   if (allCurled && thumbRingDist < 0.05 && lm[4].y > lm[14].y && thumbMiddleDist > 0.04) return 'M';
   if (allCurled && thumbOut) return 'A';
   if (allCurled && thumbAcross) return 'S';
