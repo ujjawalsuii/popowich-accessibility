@@ -2679,6 +2679,7 @@ let subtitleOverlay = null;
 let subtitleOverlayText = null;
 let subtitleRecognition = null;
 let subtitleClearTimeout = null;
+let isSubtitleModeActive = false;
 
 function injectSubtitlesOverlay() {
   if (subtitleOverlay) return;
@@ -2686,11 +2687,10 @@ function injectSubtitlesOverlay() {
   subtitleOverlay = document.createElement('div');
   subtitleOverlay.id = 'screenshield-subtitles';
 
-  // Attach shadow DOM
   const shadow = subtitleOverlay.attachShadow({ mode: 'open' });
 
-  const style = document.createElement('style');
-  style.textContent = `
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(`
     #subtitles-container {
       position: fixed;
       bottom: 60px;
@@ -2726,7 +2726,8 @@ function injectSubtitlesOverlay() {
     .subtitle-text.interim {
       color: #cbd5e1;
     }
-  `;
+  `);
+  shadow.adoptedStyleSheets = [sheet];
 
   const container = document.createElement('div');
   container.id = 'subtitles-container';
@@ -2735,7 +2736,7 @@ function injectSubtitlesOverlay() {
   subtitleOverlayText.className = 'subtitle-text';
 
   container.appendChild(subtitleOverlayText);
-  shadow.append(style, container);
+  shadow.append(container);
   document.documentElement.appendChild(subtitleOverlay);
 }
 
@@ -2747,41 +2748,48 @@ function enableSubtitles() {
   if (!SpeechRecognition) return;
 
   if (subtitleRecognition) {
-    // Already running
-    return;
+    return; // Already running
   }
 
   subtitleRecognition = new SpeechRecognition();
   subtitleRecognition.lang = 'en-US';
   subtitleRecognition.continuous = true;
-  subtitleRecognition.interimResults = true; // Show words as they are spoken
+  subtitleRecognition.interimResults = true;
+
+  subtitleRecognition.onstart = () => {
+    console.log('[ScreenShield] Live Subtitles microphone listener started successfully.');
+  };
 
   subtitleRecognition.onresult = (event) => {
     let finalTranscript = '';
     let interimTranscript = '';
+    console.log('[ScreenShield] Live Subtitles heard audio! Results count:', event.results.length);
 
-    // Only process the last 3 results to prevent infinite text buildup and lagging (the "sloppy" fix)
+    // Only process the last 3 phrase blocks. This acts as a sliding window
+    // so the subtitles don't build up infinitely across a 10-minute speech session.
     const startIdx = Math.max(0, event.results.length - 3);
 
     for (let i = startIdx; i < event.results.length; ++i) {
-      if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript + ' ';
-      } else {
-        interimTranscript += event.results[i][0].transcript;
+      if (event.results[i].length > 0) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
       }
     }
 
     const textToShow = (finalTranscript + interimTranscript).trim();
+    console.log('[ScreenShield] Parsed text:', textToShow);
 
-    if (textToShow.trim()) {
+    if (textToShow) {
       clearTimeout(subtitleClearTimeout);
       if (subtitleOverlayText) {
         subtitleOverlayText.textContent = textToShow;
         subtitleOverlayText.classList.add('visible');
-        subtitleOverlayText.classList.toggle('interim', !finalTranscript);
+        subtitleOverlayText.classList.toggle('interim', !finalTranscript && interimTranscript);
       }
 
-      // Auto-hide after 4 seconds of silence
       subtitleClearTimeout = setTimeout(() => {
         if (subtitleOverlayText) {
           subtitleOverlayText.classList.remove('visible');
@@ -2792,7 +2800,11 @@ function enableSubtitles() {
   };
 
   subtitleRecognition.onerror = (event) => {
-    console.warn('[ScreenShield] Live Subtitles error:', event.error);
+    console.warn('[ScreenShield] Live Subtitles threw error:', event.error);
+    // Ignore routine SpeechRecognition errors that just mean "nobody is talking" or "network hiccup"
+    if (event.error === 'no-speech' || event.error === 'aborted' || event.error === 'network') {
+      return;
+    }
     if (event.error === 'not-allowed' && subtitleOverlayText) {
       subtitleOverlayText.textContent = "Please allow microphone access to use Live Subtitles.";
       subtitleOverlayText.classList.add('visible');
@@ -2802,13 +2814,19 @@ function enableSubtitles() {
   };
 
   subtitleRecognition.onend = () => {
-    // If mode is still active, restart it immediately (continuous looping)
+    console.log('[ScreenShield] Live Subtitles listener ended. Restarting in 250ms...');
+    // If mode is still active, restart it (continuous looping)
+    // ADDED 250ms delay to prevent Chrome "aborted" hardware lock collision
     if (isSubtitleModeActive && subtitleRecognition) {
-      try {
-        subtitleRecognition.start();
-      } catch (e) {
-        // Can fail if already started
-      }
+      setTimeout(() => {
+        if (isSubtitleModeActive && subtitleRecognition) {
+          try {
+            subtitleRecognition.start();
+          } catch (e) {
+            console.warn('[ScreenShield] Restart failed:', e);
+          }
+        }
+      }, 250);
     }
   };
 
