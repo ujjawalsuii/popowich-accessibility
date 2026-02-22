@@ -2247,7 +2247,7 @@ function injectASLPanel() {
 }
 
 function startASLCamera(iframeEl) {
-  // The iframe handles webcam + MediaPipe. We only consume structured messages.
+  // The iframe handles webcam + MediaPipe. We only consumee structured messages.
   if (aslMessageHandler) {
     window.removeEventListener('message', aslMessageHandler);
     aslMessageHandler = null;
