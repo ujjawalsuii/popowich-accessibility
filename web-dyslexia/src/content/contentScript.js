@@ -2073,6 +2073,7 @@ function disableASL() {
   aslWordEl = null;
   aslStatusEl = null;
   aslConfidenceEl = null;
+  isSubtitleModeActive = false;
   aslWordBuffer = '';
   aslCurrentLetter = '';
   aslPredictionHistory = [];
@@ -3098,7 +3099,11 @@ function applyASLLetter(letter, confidence = 0) {
         // Apply caps mode
         const ch = aslCapsMode ? letter : letter.toLowerCase();
         aslWordBuffer += ch;
-        if (aslWordEl) aslWordEl.textContent = aslWordBuffer;
+        if (aslWordEl) {
+          aslWordEl.textContent = aslWordBuffer;
+          const container = aslWordEl.closest('.asl-captions-box');
+          if (container) container.scrollTop = container.scrollHeight;
+        }
         aslCurrentLetter = ''; // reset so not re-added
         aslLetterStart = Date.now();
       }
@@ -3109,7 +3114,11 @@ function applyASLLetter(letter, confidence = 0) {
   } else if (letter === 'SPACE') {
     if (aslCurrentLetter !== 'SPACE') {
       aslWordBuffer += ' ';
-      if (aslWordEl) aslWordEl.textContent = aslWordBuffer;
+      if (aslWordEl) {
+        aslWordEl.textContent = aslWordBuffer;
+        const container = aslWordEl.closest('.asl-captions-box');
+        if (container) container.scrollTop = container.scrollHeight;
+      }
       aslCurrentLetter = 'SPACE';
       aslLetterStart = Date.now();
     }
@@ -3117,7 +3126,11 @@ function applyASLLetter(letter, confidence = 0) {
     if (letter === aslCurrentLetter) {
       if (Date.now() - aslLetterStart >= ASL_HOLD_MS) {
         aslWordBuffer = aslWordBuffer.slice(0, -1);
-        if (aslWordEl) aslWordEl.textContent = aslWordBuffer;
+        if (aslWordEl) {
+          aslWordEl.textContent = aslWordBuffer;
+          const container = aslWordEl.closest('.asl-captions-box');
+          if (container) container.scrollTop = container.scrollHeight;
+        }
         aslCurrentLetter = '';
         aslLetterStart = Date.now();
       }
