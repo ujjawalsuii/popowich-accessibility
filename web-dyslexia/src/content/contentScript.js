@@ -2128,7 +2128,7 @@ function injectASLPanel() {
     :host { all: initial; display: block; }
     .asl-panel {
       pointer-events: auto;
-      width: 200px;
+      width: 320px;
       background: #13131f;
       border: 1px solid #22c55e;
       border-radius: 14px;
@@ -2154,7 +2154,7 @@ function injectASLPanel() {
     }
     .asl-iframe {
       width: 100%;
-      height: 120px;
+      height: 240px;
       border: none;
       background: #000;
       display: block;
