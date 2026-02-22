@@ -6,9 +6,13 @@ async function main() {
     const rawData = JSON.parse(fs.readFileSync('./combined_dataset.json', 'utf8'));
 
     // Filter and extract unique labels
-    const samples = rawData.filter(d =>
-        d && d.label && d.x && d.x.length === 63 && typeof d.label === 'string' && d.label.length === 1 && d.label.match(/[A-Z]/i)
-    ).map(d => ({ label: d.label.toUpperCase(), x: d.x }));
+    const samples = rawData.filter(d => {
+        if (!d || !d.label || !d.x || d.x.length !== 63 || typeof d.label !== 'string') return false;
+
+        // Allowed labels are individual A-Z chars, or special multi-char actions
+        const upper = d.label.toUpperCase();
+        return (upper.length === 1 && upper.match(/[A-Z]/)) || upper === 'SPACE' || upper === 'BKSP';
+    }).map(d => ({ label: d.label.toUpperCase(), x: d.x }));
 
     if (samples.length === 0) {
         console.error("No valid samples found.");
