@@ -12,7 +12,7 @@
 const RECORDABLE_LABELS = [
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
   'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-  'U', 'V', 'W', 'X', 'Y', 'Z'
+  'U', 'V', 'W', 'X', 'Y', 'Z', 'SPACE', 'BKSP'
 ];
 
 const MODEL_URL = getRuntimeUrl('models/asl_mlp_weights.json');
@@ -227,114 +227,114 @@ function predictFromModel(x63) {
 }
 
 (async function () {
-    const video = document.getElementById('cam');
-    setupHud();
-    await loadMLPModel();
+  const video = document.getElementById('cam');
+  setupHud();
+  await loadMLPModel();
 
-    // Improve hotkey reliability inside iframe
-    focusFrame();
-    setTimeout(focusFrame, 150);
-    document.addEventListener('pointerdown', focusFrame);
+  // Improve hotkey reliability inside iframe
+  focusFrame();
+  setTimeout(focusFrame, 150);
+  document.addEventListener('pointerdown', focusFrame);
 
-    // Resolve the extension base URL for locateFile
-    // asl-frame.html is at content/asl-frame.html, inside chrome-extension:// context
-    // MediaPipe files are at lib/mediapipe/
-    const frameUrl = location.href; // chrome-extension://<id>/content/asl-frame.html
-    const contentDir = frameUrl.substring(0, frameUrl.lastIndexOf('/'));
-    const mpBase = contentDir.replace('/content', '/lib/mediapipe/');
+  // Resolve the extension base URL for locateFile
+  // asl-frame.html is at content/asl-frame.html, inside chrome-extension:// context
+  // MediaPipe files are at lib/mediapipe/
+  const frameUrl = location.href; // chrome-extension://<id>/content/asl-frame.html
+  const contentDir = frameUrl.substring(0, frameUrl.lastIndexOf('/'));
+  const mpBase = contentDir.replace('/content', '/lib/mediapipe/');
 
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 320, height: 240, facingMode: 'user' }
-        });
-        video.srcObject = stream;
-        await video.play();
-        setHudStatus('Camera ready');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 320, height: 240, facingMode: 'user' }
+    });
+    video.srcObject = stream;
+    await video.play();
+    setHudStatus('Camera ready');
 
-        /* global Hands, Camera */
-        if (typeof Hands === 'undefined') {
-            console.error('[ASL Frame] Hands class not found! MediaPipe scripts may not have loaded.');
-            setHudStatus('MediaPipe missing');
-            return;
-        }
-
-        const hands = new Hands({
-            locateFile: function (f) {
-                return mpBase + f;
-            }
-        });
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 0,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.4
-        });
-
-        hands.onResults(function (results) {
-            const lms = results.multiHandLandmarks || [];
-            if (lms.length > 0) {
-                lastLandmarks = lms[0];
-                lastHandedness = results.multiHandedness?.[0]?.label || 'Unknown';
-            } else {
-                lastLandmarks = null;
-                lastHandedness = 'Unknown';
-            }
-
-            window.parent.postMessage({
-                type: 'screenshield-asl-landmarks',
-                landmarks: lms,
-                handedness: lastHandedness,
-                ts: Date.now(),
-            }, '*');
-
-            if (!lastLandmarks) {
-                setHudStatus('No hand');
-                window.parent.postMessage({
-                    type: 'screenshield-asl-prediction',
-                    letter: null,
-                    confidence: 0,
-                    modelReady,
-                    handedness: lastHandedness,
-                    ts: Date.now(),
-                }, '*');
-                return;
-            }
-
-            const x63 = normalizeAndFlatten(lastLandmarks, {
-              mirrorX: mirrorLeftToRight && lastHandedness === 'Left'
-            });
-
-            const raw = predictFromModel(x63);
-
-            if (raw.letter) {
-              setHudStatus(`Pred ${raw.letter} ${Math.round(raw.confidence * 100)}%`);
-            } else {
-              setHudStatus(modelReady ? 'Hand detected' : 'Hand detected (fallback)');
-            }
-
-            window.parent.postMessage({
-                type: 'screenshield-asl-prediction',
-                letter: raw.letter,
-                confidence: Number(raw.confidence.toFixed(4)),
-                modelReady,
-                handedness: lastHandedness,
-                ts: Date.now(),
-            }, '*');
-        });
-
-        var cam = new Camera(video, {
-            onFrame: async function () {
-                await hands.send({ image: video });
-            },
-            width: 320,
-            height: 240
-        });
-        cam.start();
-        setHudStatus('Tracking started');
-    } catch (err) {
-        setHudStatus('Camera error');
-        console.error('[ASL Frame] Failed:', err);
+    /* global Hands, Camera */
+    if (typeof Hands === 'undefined') {
+      console.error('[ASL Frame] Hands class not found! MediaPipe scripts may not have loaded.');
+      setHudStatus('MediaPipe missing');
+      return;
     }
+
+    const hands = new Hands({
+      locateFile: function (f) {
+        return mpBase + f;
+      }
+    });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 0,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.4
+    });
+
+    hands.onResults(function (results) {
+      const lms = results.multiHandLandmarks || [];
+      if (lms.length > 0) {
+        lastLandmarks = lms[0];
+        lastHandedness = results.multiHandedness?.[0]?.label || 'Unknown';
+      } else {
+        lastLandmarks = null;
+        lastHandedness = 'Unknown';
+      }
+
+      window.parent.postMessage({
+        type: 'screenshield-asl-landmarks',
+        landmarks: lms,
+        handedness: lastHandedness,
+        ts: Date.now(),
+      }, '*');
+
+      if (!lastLandmarks) {
+        setHudStatus('No hand');
+        window.parent.postMessage({
+          type: 'screenshield-asl-prediction',
+          letter: null,
+          confidence: 0,
+          modelReady,
+          handedness: lastHandedness,
+          ts: Date.now(),
+        }, '*');
+        return;
+      }
+
+      const x63 = normalizeAndFlatten(lastLandmarks, {
+        mirrorX: mirrorLeftToRight && lastHandedness === 'Left'
+      });
+
+      const raw = predictFromModel(x63);
+
+      if (raw.letter) {
+        setHudStatus(`Pred ${raw.letter} ${Math.round(raw.confidence * 100)}%`);
+      } else {
+        setHudStatus(modelReady ? 'Hand detected' : 'Hand detected (fallback)');
+      }
+
+      window.parent.postMessage({
+        type: 'screenshield-asl-prediction',
+        letter: raw.letter,
+        confidence: Number(raw.confidence.toFixed(4)),
+        modelReady,
+        handedness: lastHandedness,
+        ts: Date.now(),
+      }, '*');
+    });
+
+    var cam = new Camera(video, {
+      onFrame: async function () {
+        await hands.send({ image: video });
+      },
+      width: 320,
+      height: 240
+    });
+    cam.start();
+    setHudStatus('Tracking started');
+  } catch (err) {
+    setHudStatus('Camera error');
+    console.error('[ASL Frame] Failed:', err);
+  }
 })();
 
 function normalizeAndFlatten(lm, options = {}) {
@@ -347,7 +347,7 @@ function normalizeAndFlatten(lm, options = {}) {
   const dx = lm[9].x - wx;
   const dy = lm[9].y - wy;
   const dz = lm[9].z - wz;
-  const scale = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1.0;
+  const scale = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1.0;
 
   // 3) flatten into 63 floats
   const out = [];
@@ -403,8 +403,24 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
-  // capture sample: Space
+  // Set label to SPACE or BKSP
   if (e.code === "Space") {
+    e.preventDefault();
+    currentLabel = "SPACE";
+    updateHudLabel();
+    setHudStatus(`Label set: SPACE`);
+    return;
+  }
+  if (e.code === "Backspace") {
+    e.preventDefault();
+    currentLabel = "BKSP";
+    updateHudLabel();
+    setHudStatus(`Label set: BKSP`);
+    return;
+  }
+
+  // capture sample: Enter
+  if (e.code === "Enter") {
     e.preventDefault();
     if (!recordMode) {
       setHudStatus('Record mode OFF');
