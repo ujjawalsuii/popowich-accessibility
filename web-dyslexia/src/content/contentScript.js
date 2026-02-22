@@ -2751,9 +2751,14 @@ function enableSubtitles() {
   subtitleRecognition.continuous = true;
   subtitleRecognition.interimResults = true;
 
+  subtitleRecognition.onstart = () => {
+    console.log('[ScreenShield] Live Subtitles microphone listener started successfully.');
+  };
+
   subtitleRecognition.onresult = (event) => {
     let finalTranscript = '';
     let interimTranscript = '';
+    console.log('[ScreenShield] Live Subtitles heard audio! Results count:', event.results.length);
 
     // Loop through ALL results in the current session
     for (let i = 0; i < event.results.length; ++i) {
@@ -2767,6 +2772,7 @@ function enableSubtitles() {
     }
 
     const textToShow = (finalTranscript + interimTranscript).trim();
+    console.log('[ScreenShield] Parsed text:', textToShow);
 
     if (textToShow) {
       clearTimeout(subtitleClearTimeout);
@@ -2786,11 +2792,11 @@ function enableSubtitles() {
   };
 
   subtitleRecognition.onerror = (event) => {
+    console.warn('[ScreenShield] Live Subtitles threw error:', event.error);
     // Ignore routine SpeechRecognition errors that just mean "nobody is talking" or "network hiccup"
     if (event.error === 'no-speech' || event.error === 'aborted' || event.error === 'network') {
       return;
     }
-    console.warn('[ScreenShield] Live Subtitles error:', event.error);
     if (event.error === 'not-allowed' && subtitleOverlayText) {
       subtitleOverlayText.textContent = "Please allow microphone access to use Live Subtitles.";
       subtitleOverlayText.classList.add('visible');
@@ -2800,6 +2806,7 @@ function enableSubtitles() {
   };
 
   subtitleRecognition.onend = () => {
+    console.log('[ScreenShield] Live Subtitles listener ended. Restarting in 250ms...');
     // If mode is still active, restart it (continuous looping)
     // ADDED 250ms delay to prevent Chrome "aborted" hardware lock collision
     if (isSubtitleModeActive && subtitleRecognition) {
@@ -2808,7 +2815,7 @@ function enableSubtitles() {
           try {
             subtitleRecognition.start();
           } catch (e) {
-            // Already started or dead
+            console.warn('[ScreenShield] Restart failed:', e);
           }
         }
       }, 250);
