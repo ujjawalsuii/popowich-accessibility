@@ -2760,8 +2760,11 @@ function enableSubtitles() {
     let interimTranscript = '';
     console.log('[ScreenShield] Live Subtitles heard audio! Results count:', event.results.length);
 
-    // Loop through ALL results in the current session
-    for (let i = 0; i < event.results.length; ++i) {
+    // Only process the last 3 phrase blocks. This acts as a sliding window
+    // so the subtitles don't build up infinitely across a 10-minute speech session.
+    const startIdx = Math.max(0, event.results.length - 3);
+
+    for (let i = startIdx; i < event.results.length; ++i) {
       if (event.results[i].length > 0) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript + ' ';
