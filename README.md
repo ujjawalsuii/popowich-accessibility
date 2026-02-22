@@ -1,4 +1,4 @@
-# Team Poppowich — WebAble
+# WebAble [Team Poppowich]  
 
 Making the web readable, safe, and inclusive for everyone — one tab at a time.  
 
