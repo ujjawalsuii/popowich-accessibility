@@ -2825,6 +2825,153 @@ function disableSubtitles() {
   }
 }
 
-// ΓöÇΓöÇ Boot ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Quick Access FAB ──────────────────────────────────────────────────────────
+
+const SS_FAB_HOST_ID = 'screenshield-fab-host';
+let fabShadow = null;
+let fabMenu = null;
+
+function injectQuickAccessFAB() {
+  if (document.getElementById(SS_FAB_HOST_ID)) return;
+
+  const host = document.createElement('div');
+  host.id = SS_FAB_HOST_ID;
+  host.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:2147483647;pointer-events:none;display:flex;flex-direction:column;align-items:flex-end;gap:12px;';
+
+  fabShadow = host.attachShadow({ mode: 'open' });
+
+  // Menu
+  fabMenu = document.createElement('div');
+  fabMenu.className = 'ss-fab-menu hidden';
+  fabMenu.innerHTML = `
+    <div class="ss-fab-header">ScreenShield</div>
+    <div class="ss-fab-item">
+      <span>Voice Command</span>
+      <button id="fab-voice" class="ss-fab-btn">Mic</button>
+    </div>
+    <label class="ss-fab-item">
+      <span>ASL Recognition</span>
+      <input type="checkbox" id="fab-asl" ${settings.aslMode ? 'checked' : ''} />
+    </label>
+    <label class="ss-fab-item">
+      <span>Dyslexia Friendly</span>
+      <input type="checkbox" id="fab-dyslexia" ${settings.dyslexiaMode ? 'checked' : ''} />
+    </label>
+    <label class="ss-fab-item">
+      <span>Speech to Text</span>
+      <input type="checkbox" id="fab-tts" ${settings.ttsMode ? 'checked' : ''} />
+    </label>
+    <label class="ss-fab-item">
+      <span>Epilepsy Safe</span>
+      <input type="checkbox" id="fab-seizure" ${settings.seizureSafeMode ? 'checked' : ''} />
+    </label>
+    <label class="ss-fab-item">
+      <span>Live Captions</span>
+      <input type="checkbox" id="fab-subtitles" ${settings.subtitleMode ? 'checked' : ''} />
+    </label>
+  `;
+
+  // FAB Button
+  const fabBtn = document.createElement('button');
+  fabBtn.className = 'ss-fab-main';
+  fabBtn.innerHTML = `
+    <svg viewBox="0 0 32 32" width="24" height="24" fill="none" aria-hidden="true">
+      <path d="M16 2L4 7v9c0 6.6 5.1 12.7 12 14 6.9-1.3 12-7.4 12-14V7L16 2z" fill="#fff" opacity="0.2" />
+      <path d="M16 2L4 7v9c0 6.6 5.1 12.7 12 14 6.9-1.3 12-7.4 12-14V7L16 2z" stroke="#fff" stroke-width="2" stroke-linejoin="round" />
+      <path d="M11 16l3.5 3.5L21 12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  `;
+
+  fabBtn.addEventListener('click', () => {
+    fabMenu.classList.toggle('hidden');
+  });
+
+  // Event Listeners for Toggles
+  fabMenu.querySelector('#fab-voice').addEventListener('click', () => {
+    if (typeof window.__screenshield_personalize === 'function') {
+      window.__screenshield_personalize();
+    } else {
+      browser.runtime.sendMessage({ type: 'screenshield-personalize' });
+    }
+  });
+
+  const toggleIds = {
+    'fab-asl': 'aslMode',
+    'fab-dyslexia': 'dyslexiaMode',
+    'fab-tts': 'ttsMode',
+    'fab-seizure': 'seizureSafeMode',
+    'fab-subtitles': 'subtitleMode'
+  };
+
+  Object.entries(toggleIds).forEach(([id, settingKey]) => {
+    const el = fabMenu.querySelector(`#${id}`);
+    el.addEventListener('change', (e) => {
+      browser.storage.sync.set({ [settingKey]: e.target.checked });
+    });
+  });
+
+  fabShadow.append(fabMenu, fabBtn);
+
+  createShadowStyles(fabShadow, `
+    :host { all: initial; }
+    .ss - fab - main {
+      width: 48px; height: 48px; border - radius: 24px;
+      background: #4a90d9; border: none; cursor: pointer;
+      display: flex; align - items: center; justify - content: center;
+      box - shadow: 0 4px 12px rgba(0, 0, 0, 0.3); pointer - events: auto;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .ss - fab - main:hover { transform: scale(1.05); background: #3a7bc2; }
+    .ss - fab - menu {
+      background: #1e1e2d; border: 1px solid #3d3d5c;
+      border - radius: 12px; padding: 12px; pointer - events: auto;
+      width: 200px; box - shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: flex; flex - direction: column; gap: 8px;
+      font - family: -apple - system, sans - serif; font - size: 13px; color: #e8e8f0;
+      transition: opacity 0.2s, transform 0.2s; transform - origin: bottom right;
+    }
+    .ss - fab - menu.hidden { opacity: 0; transform: scale(0.9) translateY(10px); pointer - events: none; }
+    .ss - fab - header { font - weight: 700; font - size: 11px; text - transform: uppercase; color: #4a90d9; padding - bottom: 6px; border - bottom: 1px solid #3d3d5c; margin - bottom: 4px; }
+    .ss - fab - item { display: flex; align - items: center; justify - content: space - between; cursor: pointer; }
+    .ss - fab - item input { cursor: pointer; accent - color: #4a90d9; }
+    .ss - fab - btn { background: #3d3d5c; border: none; color: white; padding: 4px 8px; border - radius: 4px; cursor: pointer; font - size: 11px; }
+    .ss - fab - btn:hover { background: #4a90d9; }
+    `);
+
+  document.documentElement.appendChild(host);
+}
+
+function updateFABUI(changes) {
+  if (!fabShadow) return;
+  const toggleIds = {
+    aslMode: 'fab-asl',
+    dyslexiaMode: 'fab-dyslexia',
+    ttsMode: 'fab-tts',
+    seizureSafeMode: 'fab-seizure',
+    subtitleMode: 'fab-subtitles'
+  };
+  for (const [key, { newValue }] of Object.entries(changes)) {
+    if (toggleIds[key]) {
+      const el = fabShadow.querySelector(`#${toggleIds[key]}`);
+      if (el) el.checked = !!newValue;
+    }
+  }
+}
+
+// ── Boot ────────────────────────────────────────────────────────────
+
+const originalStorageListener = browser.storage.onChanged.hasListeners() ? browser.storage.onChanged : null;
+// The listener at the top of the file handles side effects.
+// We just add a small hook here to visually update the FAB checkboxes
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync') updateFABUI(changes);
+});
+
+// We need to inject the FAB during init
+const originalInit = init;
+init = async function () {
+  await originalInit();
+  injectQuickAccessFAB();
+};
 
 init().catch(console.warn);

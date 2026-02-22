@@ -40,6 +40,27 @@
       <div id="personalize-status" class="personalize-status" hidden>Listening...</div>
     </div>
 
+    <!-- ASL Recognition card -->
+    <div class="card card-asl" id="card-asl">
+      <div class="card-row">
+        <div class="card-info">
+          <h2>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                d="M10 2c-1.1 0-2 .9-2 2v6H6V7a2 2 0 0 0-4 0v5a8 8 0 0 0 16 0V9a2 2 0 0 0-4 0v1h-2V4c0-1.1-.9-2-2-2z"
+                fill="#22c55e" />
+            </svg>
+            ASL Recognition
+          </h2>
+          <p>Detects ASL fingerspelling from your webcam and sends recognized text to Chat Reader.</p>
+        </div>
+        <label class="toggle" aria-label="Toggle ASL Recognition">
+          <input type="checkbox" id="asl-toggle" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+    </div>
+
     <!-- Dyslexia Friendly card -->
     <div class="card" id="card-dyslexia">
       <div class="card-row">
@@ -58,40 +79,6 @@
           <input type="checkbox" id="dyslexia-toggle" />
           <span class="track"><span class="thumb"></span></span>
         </label>
-      </div>
-    </div>
-
-    <!-- Seizure-Safe card -->
-    <div class="card" id="card-seizure">
-      <div class="card-row">
-        <div class="card-info">
-          <h2>
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="10" cy="10" r="8" stroke="#f5a623" stroke-width="1.6" />
-              <path d="M10 6v5" stroke="#f5a623" stroke-width="2" stroke-linecap="round" />
-              <circle cx="10" cy="14.5" r="1" fill="#f5a623" />
-            </svg>
-            Seizure Safe
-          </h2>
-          <p>Stops flashing animations &amp; detects risky video content. Harm reduction — not a medical guarantee.</p>
-        </div>
-        <label class="toggle" aria-label="Toggle Seizure-Safe Mode">
-          <input type="checkbox" id="seizure-toggle" />
-          <span class="track"><span class="thumb"></span></span>
-        </label>
-      </div>
-
-      <!-- Sensitivity slider — only visible when seizure-safe is on -->
-      <div class="sensitivity-section" id="sensitivity-section" hidden>
-        <div class="sensitivity-header">
-          <label for="sensitivity-slider">Detection sensitivity</label>
-          <span class="sensitivity-badge" id="sensitivity-value">5</span>
-        </div>
-        <input type="range" id="sensitivity-slider" min="1" max="10" value="5" aria-label="Detection sensitivity" />
-        <div class="sensitivity-labels">
-          <span>Lenient</span>
-          <span>Aggressive</span>
-        </div>
       </div>
     </div>
 
@@ -137,48 +124,6 @@
       </div>
     </div>
 
-    <!-- Live Subtitles card -->
-    <div class="card card-subtitles" id="card-subtitles">
-      <div class="card-row">
-        <div class="card-info">
-          <h2>
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M4 6h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" stroke="#0ea5e9"
-                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M6 10h2M10 10h4" stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round" />
-            </svg>
-            Live Subtitles
-          </h2>
-          <p>Real-time captions for deaf/hard of hearing users during video calls or media playback.</p>
-        </div>
-        <label class="toggle" aria-label="Toggle Live Subtitles">
-          <input type="checkbox" id="subtitle-toggle" />
-          <span class="track"><span class="thumb"></span></span>
-        </label>
-      </div>
-    </div>
-
-    <!-- ASL Recognition card -->
-    <div class="card card-asl" id="card-asl">
-      <div class="card-row">
-        <div class="card-info">
-          <h2>
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path
-                d="M10 2c-1.1 0-2 .9-2 2v6H6V7a2 2 0 0 0-4 0v5a8 8 0 0 0 16 0V9a2 2 0 0 0-4 0v1h-2V4c0-1.1-.9-2-2-2z"
-                fill="#22c55e" />
-            </svg>
-            ASL Recognition
-          </h2>
-          <p>Detects ASL fingerspelling from your webcam and sends recognized text to Chat Reader.</p>
-        </div>
-        <label class="toggle" aria-label="Toggle ASL Recognition">
-          <input type="checkbox" id="asl-toggle" />
-          <span class="track"><span class="thumb"></span></span>
-        </label>
-      </div>
-    </div>
-
     <!-- Color mode (accessibility palettes) -->
     <div class="card card-colormode" id="card-colormode">
       <div class="card-info">
@@ -199,6 +144,62 @@
           <option value="protanopia">Protanopia</option>
           <option value="tritanopia">Tritanopia</option>
         </select>
+      </div>
+    </div>
+
+    <!-- Epilepsy Safe card -->
+    <div class="card" id="card-seizure">
+      <div class="card-row">
+        <div class="card-info">
+          <h2>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="8" stroke="#f5a623" stroke-width="1.6" />
+              <path d="M10 6v5" stroke="#f5a623" stroke-width="2" stroke-linecap="round" />
+              <circle cx="10" cy="14.5" r="1" fill="#f5a623" />
+            </svg>
+            Epilepsy Safe
+          </h2>
+          <p>Stops flashing animations, blocks GIFs, &amp; detects risky video content. Harm reduction — not a medical
+            guarantee.</p>
+        </div>
+        <label class="toggle" aria-label="Toggle Epilepsy-Safe Mode">
+          <input type="checkbox" id="seizure-toggle" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      <!-- Sensitivity slider — only visible when epilepsy-safe is on -->
+      <div class="sensitivity-section" id="sensitivity-section" hidden>
+        <div class="sensitivity-header">
+          <label for="sensitivity-slider">Detection sensitivity</label>
+          <span class="sensitivity-badge" id="sensitivity-value">5</span>
+        </div>
+        <input type="range" id="sensitivity-slider" min="1" max="10" value="5" aria-label="Detection sensitivity" />
+        <div class="sensitivity-labels">
+          <span>Lenient</span>
+          <span>Aggressive</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Subtitles card -->
+    <div class="card card-subtitles" id="card-subtitles">
+      <div class="card-row">
+        <div class="card-info">
+          <h2>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 6h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" stroke="#0ea5e9"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6 10h2M10 10h4" stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Live Subtitles
+          </h2>
+          <p>Real-time captions for deaf/hard of hearing users during video calls or media playback.</p>
+        </div>
+        <label class="toggle" aria-label="Toggle Live Subtitles">
+          <input type="checkbox" id="subtitle-toggle" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
       </div>
     </div>
 
