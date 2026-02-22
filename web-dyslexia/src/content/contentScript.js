@@ -2528,7 +2528,7 @@ function classifyASL(lm) {
   // T before X: both involve "index not fully extended" but T has allCurled
 
   if (allCurled && lm[4].y > lm[6].y && thumbIndexDist < 0.07 && thumbMiddleDist > 0.03) return 'T';
-  if (indexPartial && middleCurl && ringCurl && pinkyCurl) return 'X';
+  if (indexPartial && middleCurl && ringCurl && pinkyCurl && !thumbOut) return 'X';
   // E: thumb horizontal UNDER the curled fingers (thumb tip below index PIP, and thumb is more horizontal than vertical)
   const thumbHSpan = Math.abs(lm[4].x - lm[2].x);
   const thumbVSpan = Math.abs(lm[4].y - lm[2].y);
