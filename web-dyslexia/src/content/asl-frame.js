@@ -378,16 +378,16 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Toggle record mode: R
-  if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'r') {
+  // Toggle record mode: 1
+  if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === '1') {
     recordMode = !recordMode;
     updateHudRecordState();
     setHudStatus(recordMode ? 'Record ON' : 'Record OFF');
     return;
   }
 
-  // Toggle mirroring for left hand normalization: M
-  if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'm') {
+  // Toggle mirroring for left hand normalization: 2
+  if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === '2') {
     mirrorLeftToRight = !mirrorLeftToRight;
     updateHudMirrorState();
     setHudStatus(mirrorLeftToRight ? 'Mirror LEFT enabled' : 'Mirror LEFT disabled');
