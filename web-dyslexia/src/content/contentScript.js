@@ -1964,10 +1964,16 @@ function parseGenericMessage(node) {
 // ── 10. ASL Recognition ────────────────────────────────────────────────────────
 
 const SS_ASL_HOST_ID = 'screenshield-asl-host';
+const ASL_PREDICTION_CONFIDENCE_THRESHOLD = 0.6;
+const ASL_PREDICTION_WINDOW_SIZE = 10;
+const ASL_IFRAME_ORIGIN = new URL(browser.runtime.getURL('content/asl-frame.html')).origin;
 let aslStream = null;
 let aslHands = null;
 let aslCamera = null;
 let aslShadow = null;
+let aslIframeEl = null;
+let aslFrameWindow = null;
+let aslMessageHandler = null;
 let aslLetterEl = null;
 let aslWordEl = null;
 let aslCapsEl = null;
@@ -1975,24 +1981,34 @@ let aslCurrentLetter = '';
 let aslLetterStart = 0;
 let aslWordBuffer = '';
 let aslCapsMode = false; // false = lowercase, true = UPPERCASE
+let aslPredictionHistory = [];
+let aslModelReady = false;
 const ASL_HOLD_MS = 1200; // hold a sign this long to confirm
 
 function enableASL() {
   if (document.getElementById(SS_ASL_HOST_ID)) return;
-  injectASLPanel();
-  startASLCamera();
+  const iframe = injectASLPanel();
+  startASLCamera(iframe);
 }
 
 function disableASL() {
   if (aslCamera) { aslCamera.stop(); aslCamera = null; }
   if (aslStream) { aslStream.getTracks().forEach(t => t.stop()); aslStream = null; }
+  if (aslMessageHandler) {
+    window.removeEventListener('message', aslMessageHandler);
+    aslMessageHandler = null;
+  }
   document.getElementById(SS_ASL_HOST_ID)?.remove();
   aslHands = null;
   aslShadow = null;
+  aslIframeEl = null;
+  aslFrameWindow = null;
   aslLetterEl = null;
   aslWordEl = null;
   aslWordBuffer = '';
   aslCurrentLetter = '';
+  aslPredictionHistory = [];
+  aslModelReady = false;
 }
 
 function injectASLPanel() {
@@ -2018,6 +2034,8 @@ function injectASLPanel() {
   iframe.src = browser.runtime.getURL('content/asl-frame.html');
   iframe.setAttribute('allow', 'camera');
   iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('tabindex', '0');
+  aslIframeEl = iframe;
 
   // Letter display
   const letterBox = document.createElement('div');
@@ -2222,39 +2240,151 @@ function injectASLPanel() {
   `);
 
   document.documentElement.appendChild(host);
+  setTimeout(() => {
+    try { iframe.focus({ preventScroll: true }); } catch { /* best-effort */ }
+  }, 200);
   return iframe;
 }
 
-function startASLCamera() {
-  // The iframe handles webcam + MediaPipe. We just listen for results.
-  console.log('[ScreenShield ASL] startASLCamera called, setting up message listener');
-  window.addEventListener('message', (e) => {
-    if (e.data?.type === 'screenshield-asl-landmarks') {
-      const lms = e.data.landmarks;
-      if (lms && lms.length > 0) {
-        console.log('[ScreenShield ASL] Received landmarks, hands:', lms.length);
+function startASLCamera(iframeEl) {
+  // The iframe handles webcam + MediaPipe. We only consume structured messages.
+  if (aslMessageHandler) {
+    window.removeEventListener('message', aslMessageHandler);
+    aslMessageHandler = null;
+  }
+  aslFrameWindow = iframeEl?.contentWindow || null;
+
+  aslMessageHandler = (e) => {
+    if (aslFrameWindow && e.source !== aslFrameWindow) return;
+    if (e.origin !== ASL_IFRAME_ORIGIN) return;
+
+    const payload = e.data;
+    if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') return;
+
+    if (payload.type === 'screenshield-asl-prediction') {
+      if (!isValidASLPredictionPayload(payload)) return;
+
+      if (typeof payload.modelReady === 'boolean') {
+        aslModelReady = payload.modelReady;
       }
+
+      if (!aslModelReady) {
+        aslPredictionHistory = [];
+        return;
+      }
+
+      const normalizedLetter =
+        (typeof payload.letter === 'string' && payload.letter.trim())
+          ? payload.letter.trim().toUpperCase()
+          : null;
+
+      const smoothed = updateASLPredictionSmoothing(normalizedLetter, payload.confidence);
+      if (!smoothed.accepted) {
+        applyASLLetter(null, 0);
+        return;
+      }
+
+      applyASLLetter(smoothed.letter, smoothed.confidence);
+      return;
+    }
+
+    if (payload.type === 'screenshield-asl-landmarks') {
+      if (!isValidASLLandmarksPayload(payload)) return;
+      if (aslModelReady) return;
+
+      const lms = payload.landmarks;
       onASLResults({ multiHandLandmarks: lms });
     }
-  });
+  };
+
+  window.addEventListener('message', aslMessageHandler);
+}
+
+function isValidASLPredictionPayload(payload) {
+  if (!payload || typeof payload !== 'object') return false;
+  const hasLetter = payload.letter == null || typeof payload.letter === 'string';
+  const confidence = Number(payload.confidence);
+  return hasLetter && Number.isFinite(confidence) && confidence >= 0 && confidence <= 1;
+}
+
+function isValidLandmarkPoint(point) {
+  return !!point
+    && typeof point === 'object'
+    && Number.isFinite(Number(point.x))
+    && Number.isFinite(Number(point.y))
+    && Number.isFinite(Number(point.z));
+}
+
+function isValidASLLandmarksPayload(payload) {
+  if (!payload || typeof payload !== 'object') return false;
+  if (!Array.isArray(payload.landmarks)) return false;
+  return payload.landmarks.every((hand) => Array.isArray(hand) && hand.length === 21 && hand.every(isValidLandmarkPoint));
+}
+
+function updateASLPredictionSmoothing(letter, confidence) {
+  if (!letter) {
+    aslPredictionHistory = [];
+    return { accepted: false, letter: null, confidence: 0 };
+  }
+
+  const conf = Number.isFinite(Number(confidence)) ? Number(confidence) : 0;
+  aslPredictionHistory.push({ letter, confidence: conf });
+  if (aslPredictionHistory.length > ASL_PREDICTION_WINDOW_SIZE) {
+    aslPredictionHistory.shift();
+  }
+
+  const counts = new Map();
+  const sums = new Map();
+  for (const item of aslPredictionHistory) {
+    counts.set(item.letter, (counts.get(item.letter) || 0) + 1);
+    sums.set(item.letter, (sums.get(item.letter) || 0) + item.confidence);
+  }
+
+  let bestLetter = null;
+  let bestCount = -1;
+  let bestSum = -1;
+  for (const [candidate, count] of counts.entries()) {
+    const sum = sums.get(candidate) || 0;
+    if (count > bestCount || (count === bestCount && sum > bestSum)) {
+      bestLetter = candidate;
+      bestCount = count;
+      bestSum = sum;
+    }
+  }
+
+  if (!bestLetter) {
+    return { accepted: false, letter: null, confidence: 0 };
+  }
+
+  const avgConfidence = bestCount > 0 ? (bestSum / bestCount) : 0;
+  const accepted = avgConfidence >= ASL_PREDICTION_CONFIDENCE_THRESHOLD;
+
+  return {
+    accepted,
+    letter: accepted ? bestLetter : null,
+    confidence: avgConfidence,
+  };
 }
 
 // ── MediaPipe results handler ──────────────────────────────────────────────
 
-function onASLResults(results) {
-  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-    if (aslLetterEl) aslLetterEl.textContent = '...';
+function applyASLLetter(letter, confidence = 0) {
+  if (!letter) {
+    if (aslLetterEl) {
+      aslLetterEl.textContent = '...';
+      aslLetterEl.removeAttribute('title');
+    }
     aslCurrentLetter = '';
     return;
   }
 
-  const lm = results.multiHandLandmarks[0]; // 21 landmarks
-  const letter = classifyASL(lm);
-
-  if (aslLetterEl) aslLetterEl.textContent = letter || '...';
+  if (aslLetterEl) {
+    aslLetterEl.textContent = letter;
+    aslLetterEl.title = `Confidence: ${(confidence * 100).toFixed(1)}%`;
+  }
 
   // Word builder: hold a letter for ASL_HOLD_MS to confirm
-  if (letter && letter !== 'SPACE' && letter !== 'BKSP') {
+  if (letter !== 'SPACE' && letter !== 'BKSP') {
     if (letter === aslCurrentLetter) {
       if (Date.now() - aslLetterStart >= ASL_HOLD_MS) {
         // Apply caps mode
@@ -2283,6 +2413,17 @@ function onASLResults(results) {
       aslLetterStart = Date.now();
     }
   }
+}
+
+function onASLResults(results) {
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    applyASLLetter(null, 0);
+    return;
+  }
+
+  const lm = results.multiHandLandmarks[0]; // 21 landmarks
+  const letter = classifyASL(lm);
+  applyASLLetter(letter, 1);
 }
 
 // ── Geometric ASL classifier ───────────────────────────────────────────────

@@ -45,6 +45,7 @@
         "content/asl-bridge.js",
         "content/asl-frame.html",
         "content/asl-frame.js",
+        "models/*",
         "lib/mediapipe/*"
       ],
       "matches": [
