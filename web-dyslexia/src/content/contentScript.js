@@ -2674,6 +2674,7 @@ let subtitleOverlay = null;
 let subtitleOverlayText = null;
 let subtitleRecognition = null;
 let subtitleClearTimeout = null;
+let isSubtitleModeActive = false;
 
 function injectSubtitlesOverlay() {
   if (subtitleOverlay) return;
@@ -2742,23 +2743,20 @@ function enableSubtitles() {
   if (!SpeechRecognition) return;
 
   if (subtitleRecognition) {
-    // Already running
-    return;
+    return; // Already running
   }
 
   subtitleRecognition = new SpeechRecognition();
   subtitleRecognition.lang = 'en-US';
   subtitleRecognition.continuous = true;
-  subtitleRecognition.interimResults = true; // Show words as they are spoken
+  subtitleRecognition.interimResults = true;
 
   subtitleRecognition.onresult = (event) => {
     let finalTranscript = '';
     let interimTranscript = '';
 
-    // Only process the last 3 results to prevent infinite text buildup and lagging (the "sloppy" fix)
-    const startIdx = Math.max(0, event.results.length - 3);
-
-    for (let i = startIdx; i < event.results.length; ++i) {
+    // Loop through ALL results in the current session
+    for (let i = 0; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript + ' ';
       } else {
@@ -2768,15 +2766,14 @@ function enableSubtitles() {
 
     const textToShow = (finalTranscript + interimTranscript).trim();
 
-    if (textToShow.trim()) {
+    if (textToShow) {
       clearTimeout(subtitleClearTimeout);
       if (subtitleOverlayText) {
         subtitleOverlayText.textContent = textToShow;
         subtitleOverlayText.classList.add('visible');
-        subtitleOverlayText.classList.toggle('interim', !finalTranscript);
+        subtitleOverlayText.classList.toggle('interim', !finalTranscript && interimTranscript);
       }
 
-      // Auto-hide after 4 seconds of silence
       subtitleClearTimeout = setTimeout(() => {
         if (subtitleOverlayText) {
           subtitleOverlayText.classList.remove('visible');
