@@ -80,9 +80,16 @@ function updateHudRecordState() {
 }
 
 function updateHudScreenState() {
-  if (!hud.screenToggle) return;
-  hud.screenToggle.textContent = 'Screen';
-  hud.screenToggle.classList.toggle('active', useScreenCapture);
+  if (hud.screenToggle) {
+    hud.screenToggle.textContent = 'Screen';
+    hud.screenToggle.classList.toggle('active', useScreenCapture);
+  }
+  try {
+    window.parent.postMessage({
+      type: 'screenshield-asl-screen-state',
+      isScreen: useScreenCapture
+    }, '*');
+  } catch { /* best effort */ }
 }
 
 function updateHudLabel() {

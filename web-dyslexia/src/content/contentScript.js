@@ -780,12 +780,12 @@ function setupIntersectionObserver() {
 // ΓöÇΓöÇ 7. Flicker detection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function getThresholds() {
-  const s = Math.max(1, Math.min(10, settings.sensitivity));
+  const s = Math.max(1, Math.min(10, settings.sensitivity || 5));
   return {
-    flickerThreshold: Math.max(2, Math.round(6.5 - s * 0.5)),
-    lumaDeltaThreshold: Math.max(10, 60 - s * 5),
-    sampleIntervalMs: 100,
-    windowSize: 10
+    flickerThreshold: Math.max(2, Math.round(5 - s * 0.4)),  // Triggers at ~3 flashes for faster reaction
+    lumaDeltaThreshold: Math.max(10, 40 - s * 3),         // More sensitive luma thresholds
+    sampleIntervalMs: 50,                                    // 20 FPS sampling for rapid capture
+    windowSize: 20                                           // 1 second rolling window
   };
 }
 
@@ -1970,8 +1970,8 @@ function parseGenericMessage(node) {
 
 const SS_ASL_HOST_ID = 'screenshield-asl-host';
 const SS_ASL_PANEL_STATE_KEY = 'screenshield_asl_panel_state';
-const ASL_PANEL_MIN_WIDTH = 520;
-const ASL_PANEL_MIN_HEIGHT = 360;
+const ASL_PANEL_MIN_WIDTH = 380;
+const ASL_PANEL_MIN_HEIGHT = 300;
 const ASL_PANEL_EDGE_MARGIN = 12;
 const ASL_PREDICTION_CONFIDENCE_THRESHOLD = 0.85;
 const ASL_PREDICTION_WINDOW_SIZE = 10;
@@ -2367,12 +2367,14 @@ function injectASLPanel() {
     }
     .asl-panel.collapsed .asl-body,
     .asl-panel.collapsed .asl-footer {
-      display: none;
+      display: none !important;
     }
     .asl-panel.collapsed {
-      min-height: 0;
-      height: auto;
-      max-height: none;
+      min-height: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      width: clamp(260px, 320px, 100vw) !important;
+      min-width: 0 !important;
     }
     .asl-panel.maximized {
       border-radius: 14px;
@@ -2443,39 +2445,56 @@ function injectASLPanel() {
       outline-offset: 2px;
     }
     .asl-body {
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-      gap: 12px;
-      padding: 12px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 8px;
+      padding: 8px 12px;
       flex: 1;
       min-height: 0;
+      overflow-y: auto;
+    }
+    .asl-panel.screen-mode .asl-body {
+      flex-wrap: wrap;
+    }
+    .asl-panel.screen-mode .asl-preview-col {
+      order: 2;
+    }
+    .asl-panel.screen-mode .asl-output-col {
+      order: 1;
     }
     .asl-preview-col {
-      min-width: 0;
-      min-height: 0;
+      flex: 1.1 1 160px;
+      min-width: 160px;
+      display: flex;
+      flex-direction: column;
+      min-height: 140px;
+    }
+    .asl-panel.screen-mode .asl-preview-col,
+    .asl-panel.screen-mode .asl-output-col {
+      min-width: 100%;
     }
     .asl-preview-frame {
       border-radius: 12px;
       border: 1px solid var(--border);
       overflow: hidden;
       background: #000;
-      min-height: 100%;
+      flex: 1;
       height: 100%;
     }
     .asl-iframe {
       width: 100%;
       height: 100%;
-      min-height: 210px;
       border: none;
       background: #000;
       display: block;
     }
     .asl-output-col {
-      min-width: 0;
-      min-height: 0;
-      display: grid;
-      grid-template-rows: minmax(0, 1fr) auto auto;
-      gap: 10px;
+      flex: 1.2 1 180px;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     .asl-letter-box,
     .asl-captions-wrap,
@@ -2488,19 +2507,20 @@ function injectASLPanel() {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 8px 10px;
-      min-height: 38px;
+      gap: 8px;
+      padding: 6px 10px;
+      min-height: 32px;
     }
     .asl-label {
       font-size: 11px;
       color: var(--muted);
       font-weight: 600;
       letter-spacing: 0.02em;
+      white-space: nowrap;
     }
     .asl-letter {
       width: auto;
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 750;
       color: var(--success);
       font-variant-numeric: tabular-nums;
@@ -2509,26 +2529,27 @@ function injectASLPanel() {
     .asl-captions-wrap {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 10px;
-      min-height: 0;
+      gap: 4px;
+      padding: 8px 10px;
+      flex: 1;
+      min-height: 80px;
     }
     .asl-captions-box {
       border-radius: 8px;
       border: 1px solid var(--border);
       background: color-mix(in srgb, var(--bg) 52%, transparent 48%);
-      padding: 12px;
-      min-height: 136px;
+      padding: 8px 10px;
+      min-height: 40px;
       height: 100%;
       overflow-y: auto;
     }
     .asl-word {
       flex: 1;
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 650;
-      line-height: 1.45;
+      line-height: 1.4;
       color: var(--text);
-      min-height: 30px;
+      min-height: 24px;
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -2536,9 +2557,9 @@ function injectASLPanel() {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      min-height: 38px;
+      gap: 6px;
+      padding: 6px 10px;
+      min-height: 32px;
       font-size: 11px;
     }
     .asl-status {
@@ -2647,8 +2668,8 @@ function injectASLPanel() {
   const panelState = {
     left: ASL_PANEL_EDGE_MARGIN,
     top: ASL_PANEL_EDGE_MARGIN,
-    width: 620,
-    height: 520,
+    width: 560,
+    height: 400,
     minimized: false,
     maximized: false,
     restoreBounds: null,
@@ -2884,8 +2905,8 @@ function injectASLPanel() {
   resizeHandle.addEventListener('pointercancel', stopResizing);
   resizeHandle.addEventListener('lostpointercapture', stopResizing);
 
-  const initialWidth = Math.min(620, Math.max(320, window.innerWidth - (ASL_PANEL_EDGE_MARGIN * 2)));
-  const initialHeight = Math.min(520, Math.max(220, window.innerHeight - (ASL_PANEL_EDGE_MARGIN * 2)));
+  const initialWidth = Math.min(560, Math.max(380, window.innerWidth - (ASL_PANEL_EDGE_MARGIN * 2)));
+  const initialHeight = Math.min(400, Math.max(300, window.innerHeight - (ASL_PANEL_EDGE_MARGIN * 2)));
   commitBounds({
     left: ASL_PANEL_EDGE_MARGIN,
     top: ASL_PANEL_EDGE_MARGIN,
@@ -2955,6 +2976,15 @@ function startASLCamera(iframeEl) {
 
     const payload = e.data;
     if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') return;
+
+    if (payload.type === 'screenshield-asl-screen-state') {
+      const isScreen = !!payload.isScreen;
+      const panel = aslShadow?.querySelector('.asl-panel');
+      if (panel) panel.classList.toggle('screen-mode', isScreen);
+      const btn = aslShadow?.querySelector('.asl-screen-btn');
+      if (btn) btn.classList.toggle('active', isScreen);
+      return;
+    }
 
     if (payload.type === 'screenshield-asl-prediction') {
       if (!isValidASLPredictionPayload(payload)) return;
