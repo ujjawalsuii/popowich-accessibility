@@ -2032,7 +2032,7 @@ function injectASLPanel() {
   const iframe = document.createElement('iframe');
   iframe.className = 'asl-iframe';
   iframe.src = browser.runtime.getURL('content/asl-frame.html');
-  iframe.setAttribute('allow', 'camera');
+  iframe.setAttribute('allow', 'camera; display-capture');
   iframe.setAttribute('frameborder', '0');
   iframe.setAttribute('tabindex', '0');
   aslIframeEl = iframe;
@@ -2084,7 +2084,19 @@ function injectASLPanel() {
     if (aslWordEl) aslWordEl.textContent = '';
   });
 
-  wordBox.append(wordVal, sendBtn, clearBtn);
+  const screenBtn = document.createElement('button');
+  screenBtn.className = 'asl-screen-btn';
+  screenBtn.textContent = 'Screen';
+  screenBtn.title = 'Watch Meet/Screen instead of Webcam';
+  screenBtn.addEventListener('click', () => {
+    // Tell the iframe to switch modes
+    const win = aslIframeEl?.contentWindow;
+    if (win) {
+      win.postMessage({ type: 'screenshield-asl-toggle-source' }, '*');
+    }
+  });
+
+  wordBox.append(wordVal, sendBtn, clearBtn, screenBtn);
 
   // Toolbar: Caps toggle + Backspace
   const toolbar = document.createElement('div');
@@ -2208,8 +2220,20 @@ function injectASLPanel() {
       border-color: #22c55e;
       color: #fff;
     }
+    .asl-screen-btn {
+      background: #3b82f6;
+      border: 1px solid #2563eb;
+      color: #fff;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+    }
     .asl-send-btn:hover { background: #16a34a; }
     .asl-clear-btn:hover { background: #3d3d5c; }
+    .asl-screen-btn:hover { background: #2563eb; }
     .asl-toolbar {
       display: flex;
       gap: 4px;
