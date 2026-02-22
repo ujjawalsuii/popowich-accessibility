@@ -379,4 +379,4 @@ This serves `demo/index.html` on port `8080`.
 
 ## License
 
-No license file is currently present in this repository.
+MIT - License
